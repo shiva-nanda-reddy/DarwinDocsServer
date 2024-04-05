@@ -86,8 +86,9 @@ const customUpdateHandler = (update, doc, eventType) => {
   encoding.writeVarUint(encoder, eventType);
   encoding.writeVarString(encoder, update);
   const message = encoding.toUint8Array(encoder);
-  // console.log(doc.conns.keys);
-  doc.conns.forEach((_, conn) => send(doc, conn, message));
+  doc.conns.forEach((_, conn) => {
+    send(doc, conn, message);
+  });
 };
 
 class WSSharedDoc extends Y.Doc {
@@ -182,27 +183,28 @@ const messageListener = (conn, doc, message) => {
         // If the `encoder` only contains the type of reply message and no
         // message, there is no need to send the message. When `encoder` only
         // contains the type of reply, its length is 1.
-        // if (encoding.length(encoder) > 1) {
-        //   send(doc, conn, encoding.toUint8Array(encoder));
-        // }
+        if (encoding.length(encoder) > 1) {
+          send(doc, conn, encoding.toUint8Array(encoder));
+        }
         break;
       }
       case messageAwareness: {
         const encoder = encoding.createEncoder();
-        // awarenessProtocol.applyAwarenessUpdate(
-        //   doc.awareness,
-        //   decoding.readVarUint8Array(decoder),
-        //   conn
-        // );
+        awarenessProtocol.applyAwarenessUpdate(
+          doc.awareness,
+          decoding.readVarUint8Array(decoder),
+          conn
+        );
         break;
       }
-      case updateTitle: {
+      // case updateTitle: {
+      //   const messageData = decoding.readVarString(decoder);
+      //   customUpdateHandler(messageData, doc, 4);
+      //   break;
+      // }
+      default: {
         const messageData = decoding.readVarString(decoder);
-        customUpdateHandler(messageData, doc, 4);
-        break;
-      } 
-      default : {
-        customUpdateHandler("", doc, 5);
+        customUpdateHandler(messageData, doc, messageType);
       }
     }
   } catch (err) {
